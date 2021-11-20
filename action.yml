@@ -1,0 +1,43 @@
+name: Docker Image Extract
+description: |
+  Extracts all the layers of a Docker image to destination directory (default to
+  current directory).
+author: Emmanuel Frecon <efrecon+github@gmail.com>
+branding:
+  icon: layers
+  color: blue
+
+inputs:
+  destination:
+    description: |
+      Destination directory, defaults to current directory.
+    required: false
+    default: "."
+
+  options:
+    description: |
+      Additional options to extraction script, e.g. -v to print out additional
+      verbose information. This is a semi-internal input and should only be used
+      for debugging.
+    required: false
+    default: ""
+
+  image:
+    description: |
+      Fully-qualified name of the image to extract the layers from
+    required: true
+    default: scratch
+
+runs:
+  using: composite
+  steps:
+    -
+      name: Docker Image Extraction
+      id: extractor
+      shell: bash
+      run: |
+        ${{ github.action_path }}/extract.sh \
+          -d '${{ inputs.destination }}' \
+          ${{ inputs.options }} \
+          -- \
+            '${{ inputs.image }}'
