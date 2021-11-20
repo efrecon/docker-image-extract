@@ -80,23 +80,23 @@ json_unfold() {
 extract() {
   # Pull image on demand, if necessary and when EXTRACT_PULL was set to 1
   imgrm=0
-  if docker image inspect "$1" 2>/dev/null && [ "$EXTRACT_PULL" = "1" ]; then
+  if ! ${EXTRACT_DOCKER} image inspect "$1" >/dev/null 2>&1 && [ "$EXTRACT_PULL" = "1" ]; then
     _verbose "Pulling image '$1', will remove it upon completion"
-    docker image pull "$1"
+    ${EXTRACT_DOCKER} image pull "$1"
     imgrm=1
   fi
 
-  if docker image inspect "$1" 2>/dev/null; then
+  if ${EXTRACT_DOCKER} image inspect "$1" >/dev/null 2>&1 ; then
     # Create a temporary directory to store the content of the image itself, i.e.
     # the result of docker image save on the image.
     TMPD=$(mktemp -t -d image-XXXXX)
 
     # Extract image to the temporary directory
     _verbose "Extracting content of '$1' to temporary storage"
-    docker image save "$1" | tar -C "$TMPD" -xf -
+    ${EXTRACT_DOCKER} image save "$1" | tar -C "$TMPD" -xf -
 
     # Create destination directory, if necessary
-    if ! [ -d "$EXTRACT_DEST" ]; then
+    if [ ! -d "$EXTRACT_DEST" ]; then
       _verbose "Creating destination directory: $EXTRACT_DEST"
       mkdir -p "$EXTRACT_DEST"
     fi
@@ -122,7 +122,7 @@ extract() {
 
   if [ "$imgrm" = "1" ]; then
     _verbose "Removing image $1 from host"
-    docker image rm "$1"
+    ${EXTRACT_DOCKER} image rm "$1"
   fi
 }
 
