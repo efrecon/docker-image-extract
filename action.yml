@@ -1,7 +1,7 @@
 name: Docker Image Extract
-description: |
+description: >-
   Extracts all the layers of a Docker image to destination directory (default to
-  current directory).
+  current directory). Image will be pulled if not accessible.
 author: Emmanuel Frecon <efrecon+github@gmail.com>
 branding:
   icon: layers
@@ -10,7 +10,12 @@ branding:
 inputs:
   destination:
     description: |
-      Destination directory, defaults to current directory.
+      Destination directory, defaults to current directory. Note that
+      %-surrounded keywords might appear in the name of the destination
+      directory, these will be replaced by their value, extracted from the name
+      of the Docker image. Recognised keywords are: `%tag%`, `%fullname%`,
+      `%shortname%`, `%fullname_flat%`, `%fullyqualified_flat%`, `%name%`. See
+      manual for more details.
     required: false
     default: "."
 

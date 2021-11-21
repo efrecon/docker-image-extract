@@ -9,7 +9,8 @@ set -eu
 # Set this to 1 for more verbosity (on stderr)
 EXTRACT_VERBOSE=${EXTRACT_VERBOSE:-0}
 
-# Destination directory
+# Destination directory, some %-surrounded keywords will be dynamically replaced
+# by elements of the fully-qualified image name.
 EXTRACT_DEST=${EXTRACT_DEST:-"$(pwd)"}
 
 # Pull if the image does not exist. If the image had to be pulled, it will
@@ -34,16 +35,16 @@ usage() {
 
 while getopts "t:d:vnh-" opt; do
   case "$opt" in
-    t) # Target directory, will be created if necessary. Default: current directory
-      EXTRACT_DEST=$OPTARG;;
     d) # How to run the Docker client
       EXTRACT_DOCKER=$OPTARG;;
     n) # Do not pull if the image does not exist
       EXTRACT_PULL=0;;
-    v) # Turn on verbosity
-      EXTRACT_VERBOSE=1;;
     h) # Print help and exit
       usage;;
+    t) # Target directory, will be created if necessary, %-surrounded keywords will be resolved (see manual). Default: current directory
+      EXTRACT_DEST=$OPTARG;;
+    v) # Turn on verbosity
+      EXTRACT_VERBOSE=1;;
     -)
       break;;
     *)
@@ -78,6 +79,37 @@ json_unfold() {
 }
 
 extract() {
+  # Extract details out of image name
+  fullname=$1
+  tag=""
+  if printf %s\\n "$1"|grep -Eq '@sha256:[a-f0-9A-F]{64}$'; then
+    tag=$(printf %s\\n "$1"|grep -Eo 'sha256:[a-f0-9A-F]{64}$')
+    fullname=$(printf %s\\n "$1"|sed -E 's/(.*)@sha256:[a-f0-9A-F]{64}$/\1/')
+  elif printf %s\\n "$1"|grep -Eq ':[[:alnum:]_][[:alnum:]_.-]{0,127}$'; then
+    tag=$(printf %s\\n "$1"|grep -Eo ':[[:alnum:]_][[:alnum:]_.-]{0,127}$'|cut -c 2-)
+    fullname=$(printf %s\\n "$1"|sed -E 's/(.*):[[:alnum:]_][[:alnum:]_.-]{0,127}$/\1/')
+  fi
+  shortname=$(printf %s\\n "$fullname" | awk -F / '{printf $NF}')
+  fullname_flat=$(printf %s\\n "$fullname" | sed 's~/~_~g')
+  if [ -z "$tag" ]; then
+    fullyqualified_flat=$(printf %s_%s\\n "$fullname_flat" "latest")
+  else
+    fullyqualified_flat=$(printf %s_%s\\n "$fullname_flat" "$tag")
+  fi
+
+  # Generate the name of the destination directory, replacing the
+  # sugared-strings by their values. We use the ~ character as a separator in
+  # the sed expressions as / might appear in the values.
+  dst=$(printf %s\\n "$EXTRACT_DEST" |
+        sed -E \
+          -e "s~%tag%~${tag}~" \
+          -e "s~%fullname%~${fullname}~" \
+          -e "s~%shortname%~${shortname}~" \
+          -e "s~%fullname_flat%~${fullname_flat}~" \
+          -e "s~%fullyqualified_flat%~${fullyqualified_flat}~" \
+          -e "s~%name%~${1}~" \
+          )
+
   # Pull image on demand, if necessary and when EXTRACT_PULL was set to 1
   imgrm=0
   if ! ${EXTRACT_DOCKER} image inspect "$1" >/dev/null 2>&1 && [ "$EXTRACT_PULL" = "1" ]; then
@@ -96,9 +128,9 @@ extract() {
     ${EXTRACT_DOCKER} image save "$1" | tar -C "$TMPD" -xf -
 
     # Create destination directory, if necessary
-    if [ ! -d "$EXTRACT_DEST" ]; then
-      _verbose "Creating destination directory: $EXTRACT_DEST"
-      mkdir -p "$EXTRACT_DEST"
+    if ! [ -d "$dst" ]; then
+      _verbose "Creating destination directory: '$dst' (resolved from '$EXTRACT_DEST')"
+      mkdir -p "$dst"
     fi
 
     # Extract all layers of the image, in the order specified by the manifest,
@@ -108,7 +140,7 @@ extract() {
       grep -oE '[a-fA-F0-9]{64}/[[:alnum:]]+\.tar' |
       while IFS= read -r layer; do
         _verbose "Extracting layer $(printf %s\\n "$layer" | awk -F '/' '{print $1}')"
-        tar -C "$EXTRACT_DEST" -xf "${TMPD}/${layer}"
+        tar -C "$dst" -xf "${TMPD}/${layer}"
       done
     else
       _error "Cannot find $EXTRACT_MANIFEST in image content!"
