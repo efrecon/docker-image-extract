@@ -1,7 +1,9 @@
 name: Docker Image Extract
 description: >-
   Extracts all the layers of a Docker image to destination directory (default to
-  current directory). Image will be pulled if not accessible.
+  current directory) and, by default, makes the binaries contained in the image
+  accessible at the PATH for consumption by further steps in the workflow. Image
+  will be pulled if not accessible.
 author: Emmanuel Frecon <efrecon+github@gmail.com>
 branding:
   icon: layers
@@ -18,6 +20,14 @@ inputs:
       manual for more details.
     required: false
     default: "."
+
+  path:
+    description: |
+      Make all the binaries and libraries available at their standard locations,
+      e.g. 'bin', 'usr/bin', 'usr/local/bin', etc. available for further steps
+      of the workflow.
+    required: false
+    default: "true"
 
   options:
     description: |
@@ -37,9 +47,22 @@ runs:
   using: composite
   steps:
     -
+      name: Docker Image Extraction and Binary Auto-Availability
+      id: extractor
+      shell: bash
+      if: ${{ inputs.path }}
+      run: |
+        ${{ github.action_path }}/extract.sh \
+          -d '${{ inputs.destination }}' \
+          -e \
+          ${{ inputs.options }} \
+          -- \
+            '${{ inputs.image }}'
+    -
       name: Docker Image Extraction
       id: extractor
       shell: bash
+      if: ${{ ! inputs.path }}
       run: |
         ${{ github.action_path }}/extract.sh \
           -d '${{ inputs.destination }}' \

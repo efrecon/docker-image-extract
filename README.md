@@ -135,3 +135,9 @@ jobs:
         with:
           image: busybox
 ```
+
+Note that by default, the action attempts to make all the binaries available at
+their standard location under the extraction directory at the `PATH`. In other
+words, the default behaviour of the action is to leverage the behaviour of the
+[`-e`](#flag--e) flag. You can turn off this behaviour by setting the input
+called `path` to the string `"false"`.
