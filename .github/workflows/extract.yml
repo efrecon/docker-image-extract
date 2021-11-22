@@ -1,0 +1,20 @@
+name: Extract
+
+on:
+  push:
+    branches:
+      - feature/bin-action-availability
+
+jobs:
+  busybox:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Extract
+        uses: efrecon/docker-image-extract@feature/bin-action-availability
+        with:
+          image: busybox
+      -
+        name: Detect location
+        shell: bash
+        run: which ls
