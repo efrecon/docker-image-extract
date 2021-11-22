@@ -2,11 +2,17 @@
 
 This project implements both a [script](#command-line-options) and a GitHub
 [Action](#github-action) that extracts all layers from a Docker image to a
-directory. The script replaces the command that should have existed as
-`docker image extract`. The script will extract all images passed as arguments
-to a directory (default: current). Images are automatically been pulled if they
-do not exist at the host. When pulling was necessary, images will be removed
-once all their layers have been extracted.
+directory. The script implements the command that should have existed as the
+`image extract` sub-command of the `docker` CLI.
+
+The script will extract all images passed as arguments to a directory (default:
+current). Images are automatically pulled if they do not exist at the host. When
+pulling was necessary, they will be removed once all their layers have been
+extracted.
+
+In addition, the script makes it easy to (temporarily) extract binaries packaged
+in Docker images and then [run](#flag--e) them directly on the system, i.e.
+without container encapsulation.
 
 ## Requirements
 
@@ -35,6 +41,30 @@ other command-line compatible alternatives to the `docker` client, e.g.
 
   [nerdctl]: https://github.com/containerd/nerdctl
   [podman]: https://github.com/containers/podman
+
+### Flag `-e`
+
+When this flag is specified, [`extract.sh`](./extract.sh) will look for binaries
+and libraries at [standard] locations relative to the extraction directory and
+print out commands to set the `PATH` and `LD_LIBRARY_PATH` to access those
+binaries. This can be used to automatically run binaries that are not installed
+on your system, but can be found in a Docker image. For example, provided that
+`nodejs` was *not* installed on your host, the following command would provide
+you with an interactive `node` prompt after extraction in `node_latest`
+[directory](#option--t):
+
+```console
+eval $(./extract.sh -t %fullyqualified_flat% -e node) && node
+```
+
+Notes:
+
++ `-e` provides a best-effort implementation. There are certainly cases that
+  will not be supported or will not work
++ Running binaries directly extracted from a Docker images on the host is a
+  security risk.
+
+  [standard]: https://git.savannah.gnu.org/cgit/bash.git/tree/doc/bash.1?h=f188aa6a013e89d421e39354086eed513652b492#n2491
 
 ### Flag `-n`
 
