@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/action-debug
 
 jobs:
   busybox:
@@ -12,7 +11,7 @@ jobs:
     steps:
       -
         name: Extract
-        uses: efrecon/docker-image-extract@feature/action-debug
+        uses: efrecon/docker-image-extract@main
         with:
           image: busybox
           options: -v
