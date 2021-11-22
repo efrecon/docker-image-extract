@@ -3,7 +3,7 @@ name: Extract
 on:
   push:
     branches:
-      - feature/bin-action-availability
+      - main
 
 jobs:
   busybox:
@@ -11,7 +11,7 @@ jobs:
     steps:
       -
         name: Extract
-        uses: efrecon/docker-image-extract@feature/bin-action-availability
+        uses: efrecon/docker-image-extract@main
         with:
           image: busybox
       -
