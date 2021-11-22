@@ -3,7 +3,7 @@
 # If editing from Windows. Choose LF as line-ending
 
 
-set -eu
+set -eux
 
 
 # Set this to 1 for more verbosity (on stderr)
