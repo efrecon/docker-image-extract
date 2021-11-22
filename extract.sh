@@ -206,8 +206,10 @@ done
 if [ "$EXTRACT_EXPORT" = "1" ]; then
   if [ -z "${GITHUB_PATH+x}" ]; then
     printf "PATH=\"%s\"\n" "$BPATH"
-    printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH"
-  else
+    if [ -n "$LPATH" ]; then
+      printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH"
+    fi
+  elif [ -n "$LPATH" ]; then
     printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH" >> "$GITHUB_ENV"
   fi
 fi

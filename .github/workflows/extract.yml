@@ -14,6 +14,7 @@ jobs:
         uses: efrecon/docker-image-extract@main
         with:
           image: busybox
+          options: -v
       -
         name: Detect location
         shell: bash
