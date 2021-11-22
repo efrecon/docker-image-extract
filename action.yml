@@ -53,7 +53,7 @@ runs:
       if: ${{ inputs.path }}
       run: |
         ${{ github.action_path }}/extract.sh \
-          -d '${{ inputs.destination }}' \
+          -t '${{ inputs.destination }}' \
           -e \
           ${{ inputs.options }} \
           -- \
@@ -65,7 +65,7 @@ runs:
       if: ${{ ! inputs.path }}
       run: |
         ${{ github.action_path }}/extract.sh \
-          -d '${{ inputs.destination }}' \
+          -t '${{ inputs.destination }}' \
           ${{ inputs.options }} \
           -- \
             '${{ inputs.image }}'
