@@ -48,9 +48,9 @@ When this flag is specified, [`extract.sh`](./extract.sh) will look for binaries
 and libraries at [standard] locations relative to the extraction directory and
 print out commands to set the `PATH` and `LD_LIBRARY_PATH` to access those
 binaries. This can be used to automatically run binaries that are not installed
-on your system, but can be found in a Docker image. For example, provided that
-`nodejs` was *not* installed on your host, the following command would provide
-you with an interactive `node` prompt after extraction in `node_latest`
+on your system, but can be found in a Docker image. For example, if `nodejs` was
+*not* installed on your host, the following command would provide you with an
+interactive `node` prompt after extraction in the `node_latest`
 [directory](#option--t):
 
 ```console
