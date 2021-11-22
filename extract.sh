@@ -20,6 +20,9 @@ EXTRACT_PULL=${EXTRACT_PULL:-1}
 # Docker client command to use
 EXTRACT_DOCKER=${EXTRACT_DOCKER:-"docker"}
 
+# Export PATHs to binaries and libraries
+EXTRACT_EXPORT=${EXTRACT_EXPORT:-0}
+
 # Name of manifest file containing the description of the layers
 EXTRACT_MANIFEST=${EXTRACT_MANIFEST:-"manifest.json"}
 
@@ -33,10 +36,12 @@ usage() {
   exit "${1:-0}"
 }
 
-while getopts "t:d:vnh-" opt; do
+while getopts "t:d:vneh-" opt; do
   case "$opt" in
     d) # How to run the Docker client
       EXTRACT_DOCKER=$OPTARG;;
+    e) # Print out commands for PATH extraction
+      EXTRACT_EXPORT=1;;
     n) # Do not pull if the image does not exist
       EXTRACT_PULL=0;;
     h) # Print help and exit
@@ -148,6 +153,24 @@ extract() {
 
     # Remove temporary content of image save.
     rm -rf "$TMPD"
+
+    if [ "$EXTRACT_EXPORT" = "1" ]; then
+      rdst=$(cd -P -- "$dst" && pwd -P)
+      for top in "" /usr /usr/local; do
+        for sub in  /sbin /bin; do
+          if [ -d "${rdst%/}${top%/}${sub}" ] \
+              && [ "$(find "${rdst%/}${top%/}${sub}" -maxdepth 1 -mindepth 1 -type f -executable | wc -l)" -gt "0" ]; then
+            BPATH="${rdst%/}${top%/}${sub}:${BPATH}"
+          fi
+        done
+        for sub in /lib; do
+          if [ -d "${rdst%/}${top%/}${sub}" ] \
+              && [ "$(find "${rdst%/}${top%/}${sub}" -maxdepth 1 -mindepth 1 -type f -executable -name '*.so*'| wc -l)" -gt "0" ]; then
+            LPATH="${rdst%/}${top%/}${sub}:${LPATH}"
+          fi
+        done
+      done
+    fi
   else
     _error "Image $1 not present at Docker daemon"
   fi
@@ -164,6 +187,13 @@ if [ "$#" = "0" ]; then
 fi
 
 # Extract all images, one by one, to the target directory
+BPATH=$(printf %s\\n "$PATH" | sed 's/ /\\ /g')
+LPATH=$(printf %s\\n "${LD_LIBRARY_PATH:-}" | sed 's/ /\\ /g')
 for i in "$@"; do
   extract "$i"
 done
+
+if [ "$EXTRACT_EXPORT" = "1" ]; then
+  printf "PATH=\"%s\"\n" "$BPATH"
+  printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH"
+fi
