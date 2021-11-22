@@ -48,7 +48,7 @@ runs:
   steps:
     -
       name: Docker Image Extraction and Binary Auto-Availability
-      id: extractor
+      id: extractor-bin
       shell: bash
       if: ${{ inputs.path }}
       run: |
