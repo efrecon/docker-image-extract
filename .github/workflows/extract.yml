@@ -1,0 +1,20 @@
+name: Extract
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  busybox:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Extract
+        uses: efrecon/docker-image-extract@main
+        with:
+          image: busybox
+      -
+        name: Detect location
+        shell: bash
+        run: which ls

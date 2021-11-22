@@ -155,18 +155,28 @@ extract() {
     rm -rf "$TMPD"
 
     if [ "$EXTRACT_EXPORT" = "1" ]; then
+      # Resolve destination directory to absolute path
       rdst=$(cd -P -- "$dst" && pwd -P)
       for top in "" /usr /usr/local; do
+        # Add binaries
         for sub in  /sbin /bin; do
-          if [ -d "${rdst%/}${top%/}${sub}" ] \
-              && [ "$(find "${rdst%/}${top%/}${sub}" -maxdepth 1 -mindepth 1 -type f -executable | wc -l)" -gt "0" ]; then
-            BPATH="${rdst%/}${top%/}${sub}:${BPATH}"
+          bdir=${rdst%/}${top%/}${sub}
+          if [ -d "$bdir" ] \
+              && [ "$(find "$bdir" -maxdepth 1 -mindepth 1 -type f -executable | wc -l)" -gt "0" ]; then
+            if [ -z "${GITHUB_PATH+x}" ]; then
+              BPATH="${bdir}:${BPATH}"
+            else
+              printf %s\\n "$bdir" >> "$GITHUB_PATH"
+            fi
           fi
         done
+
+        # Add libraries
         for sub in /lib; do
-          if [ -d "${rdst%/}${top%/}${sub}" ] \
-              && [ "$(find "${rdst%/}${top%/}${sub}" -maxdepth 1 -mindepth 1 -type f -executable -name '*.so*'| wc -l)" -gt "0" ]; then
-            LPATH="${rdst%/}${top%/}${sub}:${LPATH}"
+          ldir=${rdst%/}${top%/}${sub}
+          if [ -d "$ldir" ] \
+              && [ "$(find "$ldir" -maxdepth 1 -mindepth 1 -type f -executable -name '*.so*'| wc -l)" -gt "0" ]; then
+            LPATH="${ldir}:${LPATH}"
           fi
         done
       done
@@ -194,6 +204,10 @@ for i in "$@"; do
 done
 
 if [ "$EXTRACT_EXPORT" = "1" ]; then
-  printf "PATH=\"%s\"\n" "$BPATH"
-  printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH"
+  if [ -z "${GITHUB_PATH+x}" ]; then
+    printf "PATH=\"%s\"\n" "$BPATH"
+    printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH"
+  else
+    printf "LD_LIBRARY_PATH=\"%s\"\n" "$LPATH" >> "$GITHUB_ENV"
+  fi
 fi
